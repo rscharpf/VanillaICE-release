@@ -1,0 +1,562 @@
+%\VignetteIndexEntry{VanillaICE Vignette}
+%\VignetteKeywords{copy number, genotype, SNP}
+%\VignettePackage{VanillaICE}
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[numbers]{natbib}
+\usepackage{color}
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
+\newcommand{\Robject}[1]{\texttt{#1}}
+\newcommand{\Rclass}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R}}
+\newcommand{\hmmoptions}{\Robject{HmmOptions}}
+\newcommand{\hmmparam}{\Robject{HmmParameter}}
+\newcommand{\crlmm}{\Rpackage{crlmm}}
+\newcommand{\oligo}{\Rpackage{oligo}}
+
+\newcommand{\cne}{\widehat{\text{CN}}}
+\newcommand{\gte}{\widehat{\text{GT}}}
+\newcommand{\gtehom}{\widehat{\text{HOM}}}
+\newcommand{\gtehet}{\widehat{\text{HET}}}
+\newcommand{\pgte}{\text{S}_{\widehat{\text{\tiny GT}}}}
+\newcommand{\pcne}{\text{S}_{\widehat{\text{\tiny CN}}}}
+\newcommand{\pgtehom}{\text{S}_{\widehat{\text{\tiny HOM}}}}
+\newcommand{\pgtehet}{\text{S}_{\widehat{\text{\tiny HET}}}}
+\newcommand{\thom}{\text{HOM}}
+\newcommand{\thet}{\text{HET}}
+\newcommand{\bDelta}{\mbox{\boldmath $\Delta$}}
+\newcommand{\real}{\mbox{$\mathbb R$}}      % real numbers
+\newcommand{\bnu}{\mbox{\boldmath $\nu$}}
+\newcommand{\ice}{\Rpackage{VanillaICE}}
+
+\textwidth=6.2in
+\textheight=8.5in
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\begin{document}
+
+\title{\ice{}: Hidden Markov Models for the Assessment of Chromosomal
+  Alterations using High-throughput SNP Arrays}
+\author{Robert Scharpf}
+\maketitle
+
+
+<<setup, echo=FALSE>>=
+options(width=70)
+@
+
+
+\begin{abstract}
+  This package provides an implementation of a hidden Markov Model to
+  identify copy number alterations from high throughput SNP arrays.
+
+\end{abstract}
+
+
+\section{From processed SNP summaries}
+
+The starting point for this section of the vignette are B allele
+frequencies and log R ratios that are available from software such as
+GenomeStudio and the \R{} package \Rpackage{crlmm}.  In this section,
+we assume that the low-level summaries are available in a plain text
+file -- one file per sample.  For users of the \Rpackage{crlmm}
+package for preprocessing, please refer to the
+\textit{crlmmDownstream} vignette.
+
+To illustrate the workflow for copy number analysis, this package
+provides Illumina 610k array data for one Hapmap trio and one oral
+cleft trio preprocessed by GenomeStudio \cite{Beaty2010}.  To keep the
+size of this package small, the GenomeStudio-processed files for these
+6 samples have been parsed to include only columns relevant to copy
+number analyses and $\approx$ 11k markers that are spanned by or
+border putative CNVs.  The code chunks provided below would be the
+same if the full files were included.
+
+<<example_data>>=
+library(VanillaICE)
+library(foreach)
+registerDoSEQ()
+extdir <- system.file("extdata", package="VanillaICE", mustWork=TRUE)
+files <- list.files(extdir, pattern="FinalReport")
+@
+
+\noindent The first several lines of these files have the following
+information:
+
+{\small
+\begin{verbatim}
+[Header]
+BSGT Version,3.3.7
+Processing Date,5/2/2009 12:08 AM
+Content,,Human610-Quadv1_B.bpm
+Num SNPs,620901
+Total SNPs,620901
+Num Samples,7599
+Total Samples,7599
+File ,1664 of 7599
+[Data]
+SNP Name,Allele1 - AB,Allele2 - AB,B Allele Freq,Log R Ratio
+cnvi0005126,-,-,0.0085,-0.7214
+cnvi0005127,-,-,0.0081,-0.8589
+cnvi0005128,-,-,0.0063,-0.164
+\end{verbatim}
+}
+
+%\noindent The minimal necessary information for proceeding with a SNP
+%array copy number analysis in this vignette is the name of the marker
+%('SNP Name'), the B allele frequencies ('B Allele Freq'), and the log
+%R ratios ('Log R ratio').  These required variables can be in any
+%order and can have different labels from those listed above.
+%Optionally, one can also extract the 'AB' call for allele 1 and
+%allele 2 so that we can keep track of the called genotypes, though
+%these columns are not strictly required.
+
+%In addition to the 6 parsed GenomeStudio files, a file containing the
+%annotation of the markers. This file can be in any format and
+The physical annotation of the markers in the genome can be downloaded
+from on-line resources or from annotation packages available from
+Bioconductor.  Here, we provide a plain-text file containing the
+genomic annotation for the markers based on build UCSC build hg18:
+
+
+<<annotation_file>>=
+list.files(extdir, pattern="SNP_info")
+@
+
+
+\noindent The annotation file contains the the name of the SNP or
+nonpolymorphic marker ('Name'), an indicator for whether the marker is
+a SNP ('Intensity Only'), the chromosome name ('Chr'), and the genomic
+physical position ('Position'). The columns for the SNP annotation can
+be in any order and have different variable labels than the file
+provided with this package.  Below, we copy the header of the provided
+annotation file:
+
+{\small
+\begin{verbatim}
+Chr,Position,Name,Intensity Only
+11,45380778,cnvi0005126,1
+11,45382079,cnvi0005127,1
+11,46561032,cnvi0005128,1
+\end{verbatim}
+}
+
+
+\subsection{Organizing marker annotation}
+
+We require that marker-level annotation is represented as a
+\Rclass{GRanges}-derived class.  To read the plain text annotation
+file, we use the \Rfunction{fread} provided in the
+\Rpackage{data.table} package.  In addition, we define an indicator
+for whether the marker is polymophic using the 'Intensity Only' flag.
+The \Rclass{SnpGRanges} class created from the \Robject{fgr} object in
+the following code-chunk ensures that this binary indicator is created
+and can be reliably accessed in downstream processing.
+
+<<FeatureAnnotation>>=
+require(data.table)
+features <- suppressWarnings(fread(file.path(extdir, "SNP_info.csv")))
+fgr <- GRanges(paste0("chr", features$Chr), IRanges(features$Position, width=1),
+               isSnp=features[["Intensity Only"]]==0)
+fgr <- SnpGRanges(fgr)
+names(fgr) <- features[["Name"]]
+@
+
+Ideally, one should also include the genome build and information on
+the chromosome lengths appropriate to the build. Here, we extract the
+metadata on the chromosomes using BSgenome Bioconductor package for
+the hg18 build.  Finally, we sort the \Robject{fgr} object such that
+the chromosomes are ordered by their \texttt{seqlevels} and the
+markers are ordered by their genomic position along the chromosome.
+
+<<seqinfo>>=
+library(BSgenome.Hsapiens.UCSC.hg18)
+sl <- seqlevels(BSgenome.Hsapiens.UCSC.hg18)
+seqlevels(fgr) <- sl[sl %in% seqlevels(fgr)]
+seqinfo(fgr) <- seqinfo(BSgenome.Hsapiens.UCSC.hg18)[seqlevels(fgr),]
+fgr <- sort(fgr)
+@
+
+\subsection{Organizing the marker-level summaries}
+
+The abbreviated plain text files included with this package and
+containing log R ratios and B allele frequencies from 2 trios are
+listed below.
+
+
+<<sourceFiles>>=
+files <- list.files(extdir, full.names=TRUE, recursive=TRUE, pattern="FinalReport")
+@
+
+We will parse these files into a specific format such that all
+downstream steps for copy number estimation no longer depend on the
+specific format of the source files.  At this point, we can
+encapsulate the the names of the source files ('sourcePaths'), the
+location of where we intend to store the parsed data ('parsedPath'),
+and the genomic marker annnotation created in the preceding section
+ in a single object called an \Rclass{ArrayViews}.
+
+<<ArrayViews>>=
+##
+## A directory to keep parsed files
+##
+parsedDir <- tempdir()
+views <- ArrayViews(rowRanges=fgr, sourcePaths=files, parsedPath=parsedDir)
+lrrFile(views) <- file.path(parsedDir, basename(fileName(views, "lrr")))
+views@bafFiles <- file.path(parsedDir, basename(fileName(views, "baf")))
+views@gtFiles <- file.path(parsedDir, basename(fileName(views, "gt")))
+colnames(views) <- gsub(".csv", "", colnames(views))
+show(views)
+@
+
+Because the format of the source files depends on upstream software
+and version number within software, our approach to parsing these
+files is to read one file and to store the appropriate metadata from
+this file so that subsequent files can be parsed in a similar
+fashion. We use the \Rfunction{fread} to read in the first file.
+
+<<fread>>=
+## read the first file
+dat <- fread(files[1])
+head(dat,n=3)
+@
+
+Next, we select which columns we plan to keep. Again, the required
+data for downstream processing is the name of the SNP identifier, the
+log R ratios, and B allele frequencies.
+
+<<select_columns>>=
+## information to store on the markers
+select_columns <- match(c("SNP Name", "Allele1 - AB", "Allele2 - AB",
+                          "Log R Ratio", "B Allele Freq"), names(dat))
+@
+
+We also specify the order in which we will store the marker-level
+summaries by matching the \Rfunction{rownames} of the \Robject{views}
+object with the names of the markers in the source file:
+
+<<order_of_markers>>=
+index_genome <- match(names(fgr), dat[["SNP Name"]])
+@
+
+Similar to the parameter classes defined in \Rpackage{Rsamtools}, we
+encapsulate the information for parsing the columns and rows of the
+source files in a class.  In addition, we specify which variable names
+in the source file refers to log R ratios ('cnvar'), B allele
+frequences ('bafvar'), and genotypes ('gtvar').
+
+<<scan_params>>=
+scan_params <- CopyNumScanParams(index_genome=index_genome, select=select_columns,
+                                 cnvar="Log R Ratio",
+                                 bafvar="B Allele Freq",
+                                 gtvar=c("Allele1 - AB", "Allele2 - AB"))
+@
+
+
+The \Rfunction{parseSourceFile} will parse a single file in the
+\Robject{views} object (by default, the first file) according to the
+parameters for reading the data in the \Robject{scan\_params} object
+and write the output to the \Rfunction{parsedPath} directory. In
+particular, the \Rfunction{parseSourceFile} returns \Rclass{NULL}.
+
+<<applyParseSourceFile>>=
+parseSourceFile(views, scan_params)
+@
+
+Apart from confirming their existance, the user should not have a need
+to directly access the parsed files.  Utilities for querying these
+files are provided through the \Robject{views} object.
+<<list_parsed_files>>=
+head(list.files(parsedPath(views)), n=3)
+@
+
+\subsection{Accessors for the parsed data}
+
+The preference for writing the parsed data to disk rather than keeping
+the data in RAM is simply that the latter does not scale to projects
+involving thousands of samples. For the former, slices of the parsed
+data easily be accessed from the \Rfunction{parsedPath} directory via
+methods defined for the \Rclass{ArrayViews} class.  For example, one
+can use accessors for the low-level summaries directly:
+\Rfunction{lrr}, \Rfunction{baf}, and \Rfunction{genotypes} for log R
+ratios, B allele frequencies, and genotypes, respectively.  The user
+has the option of either subsetting the views object or subsetting the
+matrix returned by the accessor to extract the appropriate data
+slice. In the following examples, we access data on the first 2
+markers.
+
+<<Views>>=
+lrr(views)[1:2, ]
+## or
+lrr(views[1:2, ])
+## B allele frequencies
+baf(views[1:2, ])
+## Use :: to avoid  masking by function of the same name in crlmm
+VanillaICE::genotypes(views)[1:2, ]
+@
+
+More often, it is useful to extract the low-level data in a
+\Rclass{SummarizedExperiment}-derived class such that meta-data on the
+samples remains bound to the columns of the assay data (log R ratios /
+B allele frequencies) and meta-data on the rows remains bound to the
+rows of the assay data. This is accomplished by applying the
+\Rfunction{SnpExperiment} function to a \Robject{views} object. In the
+following example, we create a \Rclass{SummarizedExperiment}-derived
+class for the first three samples in the \Robject{views} object.
+
+
+<<SnpArrayExperiment>>=
+snp_exp <- SnpExperiment(views[, 4:5])
+show(snp_exp)
+@
+
+
+\section{Hidden Markov model}
+
+\subsection{HMM parameters}
+
+The hidden Markov model for inference of germline copy number from SNP
+array data was originally described in Scharpf {\it et al.}
+\cite{Scharpf2008} but has evolved to focus more on B allele
+frequencies than genotype call probabilities [the latter requires a
+  dependency on the \Rpackage{crlmm} package].  Many of the the
+updates for computing emission probabilities have been described more
+recently \cite{Scharpf2012}.
+
+Fitting the hidden Markov model to the marker-level summaries requires
+extracting the relevant data from a \Robject{views} object using the
+\Rfunction{SnpExperiment} function illustrated in the previous
+section.  All user-level parameters relevant for fitting the HMM are
+specified in a parameter object for the emission probabilities and a
+parameter object for the transition probabilities.  In the following
+code-chunk, we create a parameter object for the emission
+probabilities.
+
+<<emission_param>>=
+param <- EmissionParam()
+@
+
+The easiest way to specify or change parameters for computing emission
+probabilities is through the \Rfunction{EmissionParam} constructor.
+For example, here we create a parameter object with the
+\Rfunction{temper} parameter set to 1/2:
+
+<<temper>>=
+param <- EmissionParam(temper=0.5)
+show(param)
+@
+
+Similarly, the constructor for the \Rclass{TransitionParam} class can
+be used to specify alternatives to the defaults.  By not specifying an
+\Robject{TransitionParam} object, default values created by the
+constructor are used by the HMM in the following example.
+
+\subsection{Fitting the HMM}
+
+The function \Rfunction{hmm2} fits the 6-state HMM to the
+\Robject{snp\_exp} object, returning a list-derived class (a
+\Rclass{HMMList}) of the same length as the number of samples.
+
+
+<<hmm>>=
+fit <- hmm2(snp_exp, param)
+show(fit)
+length(fit)
+## HMM object for the first sample
+fit[[1]]
+@
+
+\section{Inspecting, Filtering, and plotting HMM results}
+
+Several methods are defined for the \Rclass{HMMList} class to
+facilitate the selection of candidate CNVs, the filtering of technical
+artifacts, and to enable visualization of the HMM calls in the context
+of the marker-level summaries.
+
+The \Robject{fit} object is an instance of the \Rclass{HMMList} object
+of length three, each element corresponding to a sample:
+
+<<HMMList_names>>=
+names(fit)
+@
+
+The \R{} method \verb+\\+ can be used to access the HMM summary for
+the results for the jth sample. For example, here we extract the HMM
+summary for the 2nd sample:
+
+<<HMMList_subset>>=
+show(fit[[2]])
+@
+
+Alternatively, we can use \Rfunction{unlist} to create a single
+\Rclass{GRanges}-derived class containing the segmentation of all
+three samples
+
+<<HMMList_unlist>>=
+head(unlist(fit), n=3)
+@
+
+\noindent or a \Rclass{GRangesList} by splitting on the sample id:
+
+<<HMMList_grangeslist>>=
+grl <- split(unlist(fit), unlist(fit)$id)
+@
+
+\subsection{Filters}
+
+There are several meta-data columns stored in the
+\Rclass{GRanges}-derived summary useful for filtering the set of
+genomic intervals. All the available parameters for filtering the
+\Robject{fit} object are stored in the parameter class
+\Rclass{FilterParam} of which an instance can be created by its
+constructor of the same name without any arguments.
+
+<<filter_param>>=
+filter_param <- FilterParam()
+show(filter_param)
+@
+
+To apply the default filter parameters to the \Robject{fit} object, we
+use the \Rfunction{cnvFilter} function. The \Rfunction{cnvFilter}
+function returns only the set of genomic ranges satisfying the
+filters. For example,
+
+<<cnvFilter>>=
+cnvFilter(fit, filter_param)
+@
+
+To select only the segments with altered copy number states (states 1,
+2, 5, and 6) on chromosome 22, we can define the filter parameters as
+follows:
+
+<<cnvFilter_altered>>=
+select_cnv <- FilterParam(state=c("1", "2", "5", "6"), seqnames="chr22")
+cnvs <- cnvFilter(fit, select_cnv)
+cnvs
+@
+
+
+\subsection{Visualization}
+
+\subsubsection{Trellis graphics for low-level summaries}
+
+Visualization of the CNVs in the context of the lower-level summaries
+is acheived through a combination of grid and the grid-derived
+graphics provided by \Rpackage{lattice}.  The \Rfunction{xyplotList}
+and constructor \Rfunction{HmmTrellisParam} should be sufficient for
+producing a decent graphic using the default settings. In the
+following code chunk, we create a \Rclass{trellis} object for each CNV
+segment.
+
+<<xyplotList>>=
+trellis_param <- HmmTrellisParam()
+cnvList <- split(cnvs, cnvs$id)
+figList <- xyplotList(cnvList, snp_exp, trellis_param)
+names(figList)
+@
+
+\noindent Each element in \Robject{figList} is a \Rclass{trellis}
+object and can be displayed using \Rfunction{print}.
+
+<<trellis>>=
+class(figList[["FinalReport6841.csv"]][[1]])
+@
+
+
+\subsubsection{Layout using grid}
+
+<<viewports>>=
+fig1 <- figList[["FinalReport6841.csv"]][[1]]
+@
+
+<<fig1,fig=TRUE, width=8, height=6,include=FALSE>>=
+vps <- viewports()
+xygrid(fig1, vps, cnvList[[1]][1])
+@
+
+\begin{figure}[t]
+  \begin{center}
+  \includegraphics[width=0.8\textwidth]{VanillaICE-fig1}
+  \caption{\label{fig:fig1} A single-copy duplication (state 5).}
+  \end{center}
+\end{figure}
+
+A hemizygous deletion on chromosome 22 is split into too many regions.
+
+<<fig2,fig=TRUE, width=8, height=6>>=
+cnvs_sample2 <- cnvList[[2]]
+cnvs_sample2
+xygrid(figList[[2]][[1]], vps, cnvs_sample2[1])
+@
+
+Combining the adjacent hemizygous deletions through \Rfunction{reduce}
+provides a more satisfying segmentation of this data.
+
+<<reduce>>=
+cnvs_sample2r <- reduce(cnvs_sample2, min.gapwidth=500e3)
+fig2 <- xyplotList(cnvs_sample2r, snp_exp)
+@
+
+<<fig_reduced, fig=TRUE, width=8, height=6, include=FALSE, echo=FALSE>>=
+invisible(print(fig2[[1]]))
+@
+
+\begin{figure}[t]
+  \begin{center}
+  \includegraphics[width=0.8\textwidth]{VanillaICE-fig_reduced}
+  \caption{\label{fig:fig2} A hemizygous deletion (state 2) on
+    chromosome 22 after merging adjacent hemizygous CNV calls.}
+  \end{center}
+\end{figure}
+
+\section*{Parallelization}
+
+As the HMM is fit independently to each sample, parallelization is
+straightforward.  In the following unevaluated code chunk, we set up a
+parallel environment using the \R{} packages \Rpackage{snow} and
+\Rpackage{foreach}.
+
+<<parallelEnvironment,eval=FALSE>>=
+library(foreach)
+library(snow)
+library(doSNOW)
+cl <- makeCluster(2, type="SOCK")
+registerDoSNOW(cl)
+@
+
+<<fitParallel, eval=FALSE>>=
+results <- hmm2(snp_exp)
+@
+
+<<stopcl,eval=FALSE>>=
+stopCluster(cl)
+@
+
+\section*{Citing this software}
+% \bibitem{Scharpf2008}
+Robert~B Scharpf, Giovanni Parmigiani, Jonathan Pevsner, and Ingo Ruczinski.
+\newblock Hidden {M}arkov models for the assessment of chromosomal alterations
+  using high-throughput {SNP} arrays.
+\newblock {\em Annals of Applied Statistics}, 2(2):687--713, 2008.
+
+
+\section*{Session Information}
+
+The version number of R and packages loaded for generating the vignette
+were:
+
+<<echo=FALSE, results=tex>>=
+toLatex(sessionInfo())
+@
+
+\bibliography{ice}{}
+\bibliographystyle{plain}
+
+\end{document}

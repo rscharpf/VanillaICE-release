@@ -1,0 +1,155 @@
+%\VignetteIndexEntry{crlmmDownstream}
+%\VignetteKeywords{copy number, genotype, SNP}
+%\VignettePackage{VanillaICE}
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[numbers]{natbib}
+\usepackage{color}
+\usepackage[margin=1in]{geometry}
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
+\newcommand{\Robject}[1]{\texttt{#1}}
+\newcommand{\Rclass}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R}}
+\newcommand{\hmmoptions}{\Robject{HmmOptions}}
+\newcommand{\hmmparam}{\Robject{HmmParameter}}
+\newcommand{\crlmm}{\Rpackage{crlmm}}
+\newcommand{\oligo}{\Rpackage{oligo}}
+
+\title{Integration with the crlmm package for copy number inference}
+\author{Robert Scharpf}
+
+\begin{document}
+
+\maketitle
+
+<<loadData>>=
+library(oligoClasses)
+library(VanillaICE)
+library(crlmm)
+library(SNPchip)
+library(IRanges)
+library(foreach)
+@
+
+We load a portion of chromosome 8 from 2 HapMap samples that were
+processed using the \Rpackage{crlmm} package.
+
+
+<<data>>=
+data(cnSetExample, package="crlmm")
+@
+
+In the following unevaluated code chunk, we could enable
+parallelization of the hidden Markov models using the package
+\Rpackage{snow}.
+
+<<snow,eval=FALSE>>=
+##registerDoSEQ()
+library(snow)
+library(doSNOW)
+cl <- makeCluster(2, type="SOCK")
+registerDoSNOW(cl)
+ocSamples(2)
+@
+
+<<echo=FALSE,results=hide>>=
+registerDoSEQ()
+@
+
+The data \Robject{cnSetExample} is an object of class \Rclass{CNSet}.
+We coerce the \Rclass{CNSet} object to a \Rclass{SnpArrayExperiment}
+that contains information on copy number (log R ratios) and B allele
+frequencies.
+
+<<parse_cnSet>>=
+se <- as(cnSetExample, "SnpArrayExperiment")
+@
+
+\section*{Wave correction}
+
+To correct for genomic waves that correlate with GC content [refs], we
+use the \R{} package \Rpackage{ArrayTV} -- an approach adapted from
+the wave correction methods proposed by Benjamini and Speed for next
+generation sequencing platforms \cite{Benjamini2012}.  In the
+following code-chunk, we select a subset of the samples in the study
+to evaluate the genomic window for wave correction.  See the ArrayTV
+vignette for details.  For large datasets, one could randomly select
+20 or 25 samples to compute the window, and then use a pre-selected
+window for wave correction on the remaining samples.
+
+<<windowselection>>=
+library(ArrayTV)
+i <- seq_len(ncol(se))
+increms <- c(10,1000,100e3)
+wins <- c(100,10e3,1e6)
+res <- gcCorrect(lrr(se),
+                 increms=increms,
+                 maxwins=wins,
+                 returnOnlyTV=FALSE,
+                 verbose=TRUE,
+                 build="hg18",
+                 chr=chromosome(se),
+                 starts=start(se))
+se2 <- se
+assays(se2)[["cn"]] <- res$correctedVals
+@
+%
+%Pre-compute the gc composition for a window of size 6500bp:
+%
+%<<gccontent,eval=FALSE>>=
+%##gc.matrix <- computeGC(oligoList, c(10, 10e3), c(10,10e3))
+%##gc.matrix <- computeGC(oligoList, c(10, 10e3), c(10,10e3))
+%@
+%
+%We use the gc content for the two windows in \texttt{gc.matrix} to
+%correct the log R ratios for all samples in the dataset.  If the assay
+%data elements in the \texttt{oligoList} object were \texttt{ff}
+%objects, NULL is returned and the log R ratios are updated on disk.
+%If the assay data elements are matrices, a \Rclass{BafLrrSetList}
+%object is returned with the correct log R ratios.
+%
+%<<gccorrect, eval=FALSE>>=
+%oligoList2 <- gcCorrect(oligoList, increms=c(10,10e3), maxwins=c(10,10e3),
+%			providedGC=gc.matrix)
+%@
+%
+\section*{HMM}
+
+To identify CNVs, we fit a 6-state hidden markov model from estimates
+of the B allele frequency and log R ratios. A \Rfunction{hmm} method
+is defined for the \Rclass{BafLrrSetList} class, and we apply the
+method directly with a few parameters that change the arguments from
+their default values.  For example, the \texttt{TAUP} parameter scales
+the transition probability matrix.  Larger values of \texttt{TAUP}
+makes it more expensive to transition from the normal copy number
+state to states with altered copy number.
+
+<<hmm>>=
+res <- hmm2(se2)
+@
+
+
+The object \Robject{res} can be filtered and putative CNVs can be
+visually inspected with the low-level summaries. Further details on
+such post-hoc analyses are provided in the section
+'Inspecting,Filtering, and plotting HMM results' in the
+\texttt{VanillaICE} vignette.
+
+\section*{Session Information}
+
+The version number of R and packages loaded for generating the vignette
+were:
+
+<<echo=FALSE, results=tex>>=
+toLatex(sessionInfo())
+@
+
+\bibliography{ice}{}
+\bibliographystyle{plain}
+
+\end{document}

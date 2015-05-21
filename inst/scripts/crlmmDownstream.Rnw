@@ -1,0 +1,191 @@
+%\VignetteIndexEntry{CrlmmDownstream Vignette}
+%\VignetteKeywords{copy number, genotype, SNP}
+%\VignettePackage{VanillaICE}
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage[margin=1in]{geometry}
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
+\newcommand{\Robject}[1]{\texttt{#1}}
+\newcommand{\Rclass}[1]{\Robject{#1}}
+\newcommand{\R}{\textsf{R}}
+\newcommand{\hmmoptions}{\Robject{HmmOptions}}
+\newcommand{\hmmparam}{\Robject{HmmParameter}}
+\newcommand{\crlmm}{\Rpackage{crlmm}}
+\newcommand{\oligo}{\Rpackage{oligo}}
+\newcommand{\code}[1]{\Robject{#1}}
+
+\newcommand{\cne}{\widehat{\text{CN}}}
+\newcommand{\gte}{\widehat{\text{GT}}}
+\newcommand{\gtehom}{\widehat{\text{HOM}}}
+\newcommand{\gtehet}{\widehat{\text{HET}}}
+\newcommand{\pgte}{\text{S}_{\widehat{\text{\tiny GT}}}}
+\newcommand{\pcne}{\text{S}_{\widehat{\text{\tiny CN}}}}
+\newcommand{\pgtehom}{\text{S}_{\widehat{\text{\tiny HOM}}}}
+\newcommand{\pgtehet}{\text{S}_{\widehat{\text{\tiny HET}}}}
+\newcommand{\thom}{\text{HOM}}
+\newcommand{\thet}{\text{HET}}
+\newcommand{\bDelta}{\mbox{\boldmath $\Delta$}}
+\newcommand{\real}{\mbox{$\mathbb R$}}      % real numbers
+\newcommand{\bnu}{\mbox{\boldmath $\nu$}}
+\newcommand{\ice}{\Rpackage{VanillaICE}}
+
+\begin{document}
+\title{A hidden Markov model for SNP arrays processed with \crlmm{}}
+\author{Robert Scharpf}
+\maketitle
+
+<<loadCnSet>>=
+require("crlmm")
+library(VanillaICE)
+require(RColorBrewer)
+@
+
+<<echo=FALSE>>=
+##setCacheDir("/nexsan2/disk3/rscharpf/VanillaICE")
+@
+
+%\section{For datasets with more than 10 samples}
+
+For datasets with more than 10 samples processed in a batch, copy
+number estimation using the linear model described in Scharpf et al,
+2010 is feasible.  Following the vignettes for copy number analysis in
+the \Rpackage{crlmm} package, one obtains an object of class
+\Robject{CNSet}.  Here we describe how to smooth the copy number
+estimates integrating information from the B allele frequencies.  We
+begin with a \Robject{CNSet} object containing the information on
+chromosome 8 for two samples.  These samples were processed as part of
+a larger batch, making estimates from the linear model available.
+
+<<cnSetExample>>=
+data(cnSetExample, package="crlmm")
+@
+
+We begin by ordering the \Robject{CNSet} object by chromosome and
+physical position, then coercing the ordered \code{CNSet} object to an
+object of class \Robject{BafLrrSetList}.
+
+<<coerceToOligoSnpSet>>=
+cnSetExample <- chromosomePositionOrder(cnSetExample)
+brList <- constructBafLrrSetListFrom(cnSetExample)
+@
+
+We now smooth the copy number estimates, integrating emission
+probabilities obtained from log R ratios and BAFs.  As a first step,
+we fit the HMM to a single sample / chromosome and visually inspect
+the inferred states to verify that the default settings are suitable.
+
+<<fit1>>=
+fit1 <- hmm(brList[[1]][, 1])
+@
+
+The \Robject{fit} object is an object of class
+\Rclass{GRangesList}. Each element in the list is a \Robject{GRanges}
+object for one sample that provides the start and stop positions of
+the inferred copy number state. The \Rpackage{IRanges} function
+\Rfunction{findOverlaps} can be useful for identifying which markers
+in the original \code{BafLrrSetList} object lie within a particular
+range.  Methods for visualizing the low level summaries along with the
+inferred breakpoints for the copy number states make use of the
+\Rfunction{findOverlaps}. In the following code chunk we use the
+function \Rfunction{xyplotLrrBaf} to plot the log R ratios and B
+allele frequencies for the genomic intervals in the \Robject{GRanges}
+object.  We plot a 2 megabase window framing the genomic intervals by
+passing the argument \texttt{frame=2e6}. See the function
+\Rfunction{xypanelBaf} for details on how to modify the appearance of
+the plotting symbols.
+
+<<visualizationCopyNumber,fig=TRUE>>=
+library(SNPchip)
+brSet <- brList[chromosome(brList) == 8][[1]]
+rd.sample1 <- fit[[1]]
+rd <- rd.sample1[chromosome(rd.sample1)=="chr8", ]
+cnfig <- xyplotLrrBaf(rd, brSet[,1], frame=2e6,
+		      panel=xypanelBaf, cex=0.3, pch=21, border="blue",
+		      scales=list(x="free", cex=0.6))
+print(cnfig)
+@
+
+As the HMM states for this sample appear reasonable, one can fit the
+HMM to all samples and all chromosome by
+
+
+<<fit2>>=
+fit2 <- hmm(brList)
+@
+
+Since there are only 2 samples in the \Robject{brList} object, the
+length of fit2 is only two.
+
+<<fit2length>>=
+length(fit2)
+@
+
+The \Robject{GRangesList} object can be stacked to create a
+\Robject{GRanges} object as follows:
+
+<<granges>>=
+library(GenomicRanges)
+gr <- stack(fit2)
+gr
+@
+
+
+\section{Troubleshooting}
+
+Missing values are permissable for the LRRs and BAFs:
+
+<<SNR>>=
+set.seed(1)
+brSet <- brList[[1]]
+lrr(brSet)[sample(1:nrow(brSet), 50), 1] <- NA
+baf(brSet)[sample(1:nrow(brSet), 50), 1] <- NA
+fit2 <- hmm(brSet)
+all.equal(state(fit2[[1]]), state(fit[[1]]))
+@
+
+While permissable, a large number of NA's may indicate problems with
+the preprocessing or the \Rfunction{crlmmCopynumber} step described in
+the \texttt{copynumber} vignette in the \Rpackage{crlmm}
+package. First, verify that the signal to noise ratio (SNR) is in an
+acceptable range. For Affymetrix, the SNR should be above 5 and for
+Illumina the SNR should be above 25.
+
+<<affySNR>>=
+isTRUE(all(cnSetExample$SNR[] > 5))
+@
+
+Next, check that the percentage of missing values is reasonably low:
+
+<<percentageNA>>=
+r <- lrr(brList[[1]])[,]
+isTRUE(all(apply(is.na(r), 2, sum) < 0.01))
+snp.index <- which(isSnp(brList[[1]]))
+b <- baf(brList[[1]])[snp.index,]
+isTRUE(all(apply(is.na(b), 2, sum) < 0.01))
+@
+
+If, for example, all the log R ratios / BAFs are missing, this
+indicates that the \Rfunction{crlmmCopynumber} step was either not
+performed or unsucessful. Specifically, the following unevaluated step
+is needed:
+
+<<crlmmCopynumber,eval=FALSE>>=
+crlmmCopyNumber(cnSetExample)
+@
+
+\noindent where \Robject{cnSetExample} is an object of class
+\Rclass{CNSet}.
+
+
+\section{Session Information}
+<<sessionInfo,results=tex>>=
+toLatex(sessionInfo())
+@
+
+\end{document}

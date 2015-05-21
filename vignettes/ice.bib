@@ -1,0 +1,332 @@
+@ARTICLE{Scharpf2008,
+  author = {Robert B Scharpf and Giovanni Parmigiani and Jonathan Pevsner and
+	Ingo Ruczinski},
+  title = {Hidden {M}arkov models for the assessment of chromosomal alterations
+	using high-throughput {SNP} arrays},
+  journal = {Annals of Applied Statistics},
+  year = {2008},
+  volume = {2},
+  pages = {687--713},
+  number = {2},
+  url = {http://dx.doi.org/10.1214/07-AOAS155}
+}
+
+@ARTICLE{Wang2007a,
+  author = {Kai Wang and Mingyao Li and Dexter Hadley and Rui Liu and Joseph
+	Glessner and Struan F A Grant and Hakon Hakonarson and Maja Bucan},
+  title = {PennCNV: an integrated hidden Markov model designed for high-resolution
+	copy number variation detection in whole-genome SNP genotyping data.},
+  journal = {Genome Res},
+  year = {2007},
+  volume = {17},
+  pages = {1665--1674},
+  number = {11},
+  month = {Nov},
+  abstract = {Comprehensive identification and cataloging of copy number variations
+	(CNVs) is required to provide a complete view of human genetic variation.
+	The resolution of CNV detection in previous experimental designs
+	has been limited to tens or hundreds of kilobases. Here we present
+	PennCNV, a hidden Markov model (HMM) based approach, for kilobase-resolution
+	detection of CNVs from Illumina high-density SNP genotyping data.
+	This algorithm incorporates multiple sources of information, including
+	total signal intensity and allelic intensity ratio at each SNP marker,
+	the distance between neighboring SNPs, the allele frequency of SNPs,
+	and the pedigree information where available. We applied PennCNV
+	to genotyping data generated for 112 HapMap individuals; on average,
+	we detected approximately 27 CNVs for each individual with a median
+	size of approximately 12 kb. Excluding common rearrangements in lymphoblastoid
+	cell lines, the fraction of CNVs in offspring not detected in parents
+	(CNV-NDPs) was 3.3\%. Our results demonstrate the feasibility of
+	whole-genome fine-mapping of CNVs via high-density SNP genotyping.},
+  doi = {10.1101/gr.6861907},
+  keywords = {Gene Dosage; Genome, Human; Genotype; Humans; Markov Chains; Models,
+	Statistical; Polymorphism, Single Nucleotide; Variation (Genetics)},
+  owner = {gp},
+  pii = {gr.6861907},
+  pmid = {17921354},
+  timestamp = {2008.03.20},
+  url = {http://dx.doi.org/10.1101/gr.6861907}
+}
+
+@ARTICLE{Colella2007,
+  author = {Stefano Colella and Christopher Yau and Jennifer M Taylor and Ghazala
+	Mirza and Helen Butler and Penny Clouston and Anne S Bassett and
+	Anneke Seller and Christopher C Holmes and Jiannis Ragoussis},
+  title = {{Q}uanti{SNP}: an {O}bjective {B}ayes {H}idden-{M}arkov {M}odel to
+	detect and accurately map copy number variation using {SNP} genotyping
+	data.},
+  journal = {Nucleic Acids Res},
+  year = {2007},
+  volume = {35},
+  pages = {2013--2025},
+  number = {6},
+  abstract = {Array-based technologies have been used to detect chromosomal copy
+	number changes (aneuploidies) in the human genome. Recent studies
+	identified numerous copy number variants (CNV) and some are common
+	polymorphisms that may contribute to disease susceptibility. We developed,
+	and experimentally validated, a novel computational framework (QuantiSNP)
+	for detecting regions of copy number variation from BeadArray SNP
+	genotyping data using an Objective Bayes Hidden-Markov Model (OB-HMM).
+	Objective Bayes measures are used to set certain hyperparameters
+	in the priors using a novel re-sampling framework to calibrate the
+	model to a fixed Type I (false positive) error rate. Other parameters
+	are set via maximum marginal likelihood to prior training data of
+	known structure. QuantiSNP provides probabilistic quantification
+	of state classifications and significantly improves the accuracy
+	of segmental aneuploidy identification and mapping, relative to existing
+	analytical tools (Beadstudio, Illumina), as demonstrated by validation
+	of breakpoint boundaries. QuantiSNP identified both novel and validated
+	CNVs. QuantiSNP was developed using BeadArray SNP data but it can
+	be adapted to other platforms and we believe that the OB-HMM framework
+	has widespread applicability in genomic research. In conclusion,
+	QuantiSNP is a novel algorithm for high-resolution CNV/aneuploidy
+	detection with application to clinical genetics, cancer and disease
+	association studies.},
+  doi = {10.1093/nar/gkm076},
+  keywords = {Algorithms, Aneuploidy, Bayes Theorem, Chromosome Breakage, Chromosome
+	Mapping, Computational Biology, Genome, Genomics, Genotype, Human,
+	Humans, Loss of Heterozygosity, Markov Chains, Models, Polymorphism,
+	Singl, Statistical, e Nucleotide, 17341461},
+  owner = {rscharpf},
+  pii = {gkm076},
+  pmid = {17341461},
+  timestamp = {2007.07.10},
+  url = {http://dx.doi.org/10.1093/nar/gkm076}
+}
+
+@ARTICLE{Korn2008,
+  author = {Joshua M Korn and Finny G Kuruvilla and Steven A McCarroll and Alec
+	Wysoker and James Nemesh and Simon Cawley and Earl Hubbell and Jim
+	Veitch and Patrick J Collins and Katayoon Darvishi and Charles Lee
+	and Marcia M Nizzari and Stacey B Gabriel and Shaun Purcell and Mark
+	J Daly and David Altshuler},
+  title = {Integrated genotype calling and association analysis of SNPs, common
+	copy number polymorphisms and rare CNVs.},
+  journal = {Nat Genet},
+  year = {2008},
+  volume = {40},
+  pages = {1253--1260},
+  number = {10},
+  month = {Oct},
+  abstract = {Accurate and complete measurement of single nucleotide (SNP) and copy
+	number (CNV) variants, both common and rare, will be required to
+	understand the role of genetic variation in disease. We present Birdsuite,
+	a four-stage analytical framework instantiated in software for deriving
+	integrated and mutually consistent copy number and SNP genotypes.
+	The method sequentially assigns copy number across regions of common
+	copy number polymorphisms (CNPs), calls genotypes of SNPs, identifies
+	rare CNVs via a hidden Markov model (HMM), and generates an integrated
+	sequence and copy number genotype at every locus (for example, including
+	genotypes such as A-null, AAB and BBB in addition to AA, AB and BB
+	calls). Such genotypes more accurately depict the underlying sequence
+	of each individual, reducing the rate of apparent mendelian inconsistencies.
+	The Birdsuite software is applied here to data from the Affymetrix
+	SNP 6.0 array. Additionally, we describe a method, implemented in
+	PLINK, to utilize these combined SNP and CNV genotypes for association
+	testing with a phenotype.},
+  doi = {10.1038/ng.237},
+  institution = {Broad Institute of Harvard and Massachusetts Institute of Technology,
+	Cambridge, Massachusetts 02142, USA. jkorn@broad.mit.edu},
+  owner = {rscharpf},
+  pii = {ng.237},
+  pmid = {18776909},
+  timestamp = {2008.10.07},
+  url = {http://dx.doi.org/10.1038/ng.237}
+}
+
+@ARTICLE{Scharpf2010,
+  author = {Robert B Scharpf and Ingo Ruczinski and Benilton Carvalho and Betty
+	Doan and Aravinda Chakravarti and Rafael Irizarry},
+  title = {A multilevel model to address batch effects in copy number estimation
+	using SNP arrays},
+  journal={Biostatistics},
+  year = {2010},
+}
+
+
+@ARTICLE{Olshen2004,
+  author = {Adam B Olshen and E. S. Venkatraman and Robert Lucito and Michael
+	Wigler},
+  title = {Circular binary segmentation for the analysis of array-based {DNA}
+	copy number data.},
+  journal = {Biostatistics},
+  year = {2004},
+  volume = {5},
+  pages = {557-72},
+  number = {4},
+  month = {Oct},
+  abstract = {DNA sequence copy number is the number of copies of DNA at a region
+	of a genome. Cancer progression often involves alterations in DNA
+	copy number. Newly developed microarray technologies enable simultaneous
+	measurement of copy number at thousands of sites in a genome. We
+	have developed a modification of binary segmentation, which we call
+	circular binary segmentation, to translate noisy intensity measurements
+	into regions of equal copy number. The method is evaluated by simulation
+	and is demonstrated on cell line data with known copy number alterations
+	and on a breast cancer cell line data set.},
+  doi = {10.1093/biostatistics/kxh008},
+  keywords = {Breast Neoplasms, Cell Line, Computer Simulation, Female, Gene Dosage,
+	Genome, Human, Humans, Non-U.S. Gov't, Oligonucleotide Array Sequence
+	Analysis, P.H.S., Research Support, Tumor, U.S. Gov't, 15475419},
+  owner = {robscharpf},
+  pii = {5/4/557},
+  url = {http://dx.doi.org/10.1093/biostatistics/kxh008}
+}
+
+
+@ARTICLE{Benjamini2012,
+  author = {Benjamini, Yuval and Speed, Terence P.},
+  title = {Summarizing and correcting the {GC} content bias in high-throughput
+	sequencing.},
+  journal = {Nucleic Acids Res},
+  year = {2012},
+  volume = {40},
+  pages = {e72},
+  number = {10},
+  month = {May},
+  abstract = {GC content bias describes the dependence between fragment count (read
+	coverage) and GC content found in Illumina sequencing data. This
+	bias can dominate the signal of interest for analyses that focus
+	on measuring fragment abundance within a genome, such as copy number
+	estimation (DNA-seq). The bias is not consistent between samples;
+	and there is no consensus as to the best methods to remove it in
+	a single sample. We analyze regularities in the GC bias patterns,
+	and find a compact description for this unimodal curve family. It
+	is the GC content of the full DNA fragment, not only the sequenced
+	read, that most influences fragment count. This GC effect is unimodal:
+	both GC-rich fragments and AT-rich fragments are underrepresented
+	in the sequencing results. This empirical evidence strengthens the
+	hypothesis that PCR is the most important cause of the GC bias. We
+	propose a model that produces predictions at the base pair level,
+	allowing strand-specific GC-effect correction regardless of the downstream
+	smoothing or binning. These GC modeling considerations can inform
+	other high-throughput sequencing analyses such as ChIP-seq and RNA-seq.},
+  doi = {10.1093/nar/gks001},
+  institution = {Department of Statistics, University of California, Berkeley, CA
+	94720, USA. yuvalb@stat.berkeley.edu},
+  keywords = {Base Composition; DNA, chemistry; Genome, Human; High-Throughput Nucleotide
+	Sequencing, methods; Humans; Models, Genetic; Poisson Distribution;
+	Sequence Analysis, DNA, methods},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {rscharpf},
+  pii = {gks001},
+  pmcid = {PMC3378858},
+  pmid = {22323520},
+  timestamp = {2012.10.05},
+  url = {http://dx.doi.org/10.1093/nar/gks001}
+}
+
+
+@ARTICLE{Beaty2010,
+  author = {Terri H Beaty and Jeffrey C Murray and Mary L Marazita and Ronald
+	G Munger and Ingo Ruczinski and Jacqueline B Hetmanski and Kung Yee
+	Liang and Tao Wu and Tanda Murray and M. Daniele Fallin and Richard
+	A Redett and Gerald Raymond and Holger Schwender and Sheng-Chih Jin
+	and Margaret E Cooper and Martine Dunnwald and Maria A Mansilla and
+	Elizabeth Leslie and Stephen Bullard and Andrew C Lidral and Lina
+	M Moreno and Renato Menezes and Alexandre R Vieira and Aline Petrin
+	and Allen J Wilcox and Rolv T Lie and Ethylin W Jabs and Yah Huei
+	Wu-Chou and Philip K Chen and Hong Wang and Xiaoqian Ye and Shangzhi
+	Huang and Vincent Yeow and Samuel S Chong and Sun Ha Jee and Bing
+	Shi and Kaare Christensen and Mads Melbye and Kimberly F Doheny and
+	Elizabeth W Pugh and Hua Ling and Eduardo E Castilla and Andrew E
+	Czeizel and Lian Ma and L. Leigh Field and Lawrence Brody and Faith
+	Pangilinan and James L Mills and Anne M Molloy and Peadar N Kirke
+	and John M Scott and James M Scott and Mauricio Arcos-Burgos and
+	Alan F Scott},
+  title = {A genome-wide association study of cleft lip with and without cleft
+	palate identifies risk variants near {MAFB} and {ABCA4}.},
+  journal = {Nat Genet},
+  year = {2010},
+  volume = {42},
+  pages = {525--529},
+  number = {6},
+  month = {Jun},
+  abstract = {Case-parent trios were used in a genome-wide association study of
+	cleft lip with and without cleft palate. SNPs near two genes not
+	previously associated with cleft lip with and without cleft palate
+	(MAFB, most significant SNP rs13041247, with odds ratio (OR) per
+	minor allele = 0.704, 95\% CI 0.635-0.778, P = 1.44 x 10(-11); and
+	ABCA4, most significant SNP rs560426, with OR = 1.432, 95\% CI 1.292-1.587,
+	P = 5.01 x 10(-12)) and two previously identified regions (at chromosome
+	8q24 and IRF6) attained genome-wide significance. Stratifying trios
+	into European and Asian ancestry groups revealed differences in statistical
+	significance, although estimated effect sizes remained similar. Replication
+	studies from several populations showed confirming evidence, with
+	families of European ancestry giving stronger evidence for markers
+	in 8q24, whereas Asian families showed stronger evidence for association
+	with MAFB and ABCA4. Expression studies support a role for MAFB in
+	palatal development.},
+  doi = {10.1038/ng.580},
+  institution = {Johns Hopkins University, School of Public Health, Baltimore, Maryland,
+	USA. tbeaty@jhsph.edu},
+  keywords = {ATP-Binding Cassette Transporters, genetics; Animals; Asian Continental
+	Ancestry Group, genetics; Cleft Lip, genetics; Cleft Palate, genetics;
+	European Continental Ancestry Group, genetics; Female; Genetic Predisposition
+	to Disease; Genome-Wide Association Study; Genotype; Humans; MafB
+	Transcription Factor, genetics; Mice; Polymorphism, Single Nucleotide},
+  language = {eng},
+  medline-pst = {ppublish},
+  owner = {rscharpf},
+  pii = {ng.580},
+  pmid = {20436469},
+  timestamp = {2011.02.02},
+  url = {http://dx.doi.org/10.1038/ng.580}
+}
+
+
+@ARTICLE{Scharpf2012,
+  author = {Scharpf, Robert B. and Beaty, Terri H. and Schwender, Holger and
+	Younkin, Samuel G. and Scott, Alan F. and Ruczinski, Ingo},
+  title = {Fast detection of de novo copy number variants from {SNP} arrays
+	for case-parent trios.},
+  journal = {BMC Bioinformatics},
+  year = {2012},
+  volume = {13},
+  pages = {330},
+  number = {1},
+  month = {Dec},
+  abstract = {ABSTRACT: BACKGROUND: In studies of case-parent trios, we define copy
+	number variants (CNVs) in the offspring that differfrom the parental
+	copy numbers as de novo and of interest for their potential functional
+	role indisease. Among the leading array-based methods for discovery
+	of de novo CNVs in case-parent triosis the joint hidden Markov model
+	(HMM) implemented in the PennCNV software. However, thecomputational
+	demands of the joint HMM are substantial and the extent to which
+	false positiveidentifications occur in case-parent trios has not
+	been well described. We evaluate these issues in astudy of oral cleft
+	case-parent trios. RESULTS: Our analysis of the oral cleft trios
+	reveals that genomic waves represent a substantial source of falsepositive
+	identifications in the joint HMM, despite a wave-correction implementation
+	in PennCNV. Inaddition, the noise of low-level summaries of relative
+	copy number (log R ratios) is stronglyassociated with batch and correlated
+	with the frequency of de novo CNV calls. Exploiting the triodesign,
+	we propose a univariate statistic for relative copy number referred
+	to as the minimum distancethat can reduce technical variation from
+	probe effects and genomic waves. We use circular binarysegmentation
+	to segment the minimum distance and maximum a posteriori estimation
+	to infer denovo CNVs from the segmented genome. Compared to PennCNV
+	on simulated data,MinimumDistance identifies fewer false positives
+	on average and is comparable to PennCNV withrespect to false negatives.
+	Genomic waves contribute to discordance of PennCNV andMinimumDistance
+	for high coverage de novo calls, while highly concordant calls on
+	chromosome 22were validated by quantitative PCR. Computationally,
+	MinimumDistance provides a nearly 8-foldincrease in speed relative
+	to the joint HMM in a study of oral cleft trios. CONCLUSIONS: Our
+	results indicate that batch effects and genomic waves are important
+	considerations forcase-parent studies of de novo CNV, and that the
+	minimum distance is an effective statistic forreducing technical
+	variation contributing to false de novo discoveries. Coupled with
+	segmentationand maximum a posteriori estimation, our algorithm compares
+	favorably to the joint HMM withMinimumDistance being much faster.},
+  doi = {10.1186/1471-2105-13-330},
+  language = {eng},
+  medline-pst = {aheadofprint},
+  owner = {rscharpf},
+  pii = {1471-2105-13-330},
+  pmcid = {PMC3576329},
+  pmid = {23234608},
+  timestamp = {2012.12.17},
+  url = {http://dx.doi.org/10.1186/1471-2105-13-330}
+}
